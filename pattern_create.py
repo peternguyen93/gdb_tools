@@ -35,7 +35,10 @@ def calculateEIP(pattern_str,str_input,mode=1):
 		key = pack('<I',int(str_input,16))
 	else:
 		key = str_input
-	offset = len(pattern_str[:pattern_str.rindex(key)])
+	if pattern_str.rfind(key) > -1:
+		offset = len(pattern_str[:pattern_str.rfind(key)])
+	else:
+		offset = -1
 	return offset
 
 def usage():
